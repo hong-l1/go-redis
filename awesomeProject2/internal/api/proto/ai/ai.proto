@@ -1,0 +1,15 @@
+syntax ="proto3";
+
+package ai;
+
+option go_package = "/ai";
+
+service AiAgentService {
+  rpc Chat(ChatReq) returns (ChatResp);
+}
+message ChatReq {
+  string text_input = 1;
+}
+message ChatResp{
+  string  text_reply = 1;
+}

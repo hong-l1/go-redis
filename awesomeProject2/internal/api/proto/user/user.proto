@@ -1,0 +1,55 @@
+syntax="proto3";
+
+package user;
+option go_package="/user";
+
+service UserService {
+  rpc AddAddress(AddAddressReq) returns (AddAddressResp) {}
+  rpc UpdateAddress(UpdateAddressReq) returns (UpdateAddressResp) {}
+  rpc GetAddressByUserId(GetAddressByUserIdReq) returns (GetAddressByUserIdResp) {}
+  rpc DeleteAddress(DeleteAddressReq) returns (DeleteAddressResp) {}
+}
+
+message AddAddressReq {
+  int64 user_id = 1;
+  Address address = 2;
+}
+
+message AddAddressResp {
+  bool success = 1;
+}
+
+message UpdateAddressReq {
+  int64 user_id = 1;
+  Address address = 2;
+}
+
+message UpdateAddressResp {
+  bool success = 1;
+}
+
+message GetAddressByUserIdReq {
+  int64 user_id = 1;
+}
+
+message GetAddressByUserIdResp {
+  repeated  Address address = 1;
+}
+
+message DeleteAddressReq {
+  int64 user_id = 1;
+  int64 address_id = 2;
+}
+
+message DeleteAddressResp {
+  bool success = 1;
+}
+
+message Address {
+  int64 address_id = 1;
+  string street_address = 2;
+  string city = 3;
+  string state = 4;
+  string country = 5;
+  string zip_code = 6;
+}

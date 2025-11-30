@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package permission;
+enum RoleType {
+  ROLE_TYPE_UNSPECIFIED = 0; // 未知状态
+  CUSTOMER = 1;            // 普通用户
+  MERCHANT = 2;            // 商家
+  ADMIN = 3;               // 管理员
+}
+option go_package = "/permission";
+service PermissionService {
+  rpc GetUserRoles(GetUserRolesRequest) returns (GetUserRolesResponse);
+  rpc AssignRoleToUser(AssignRoleToUserRequest) returns (AssignRoleToUserResponse);
+}
+
+message GetUserRolesRequest {
+  int64 user_id = 1;
+}
+message GetUserRolesResponse {
+  RoleType role = 1;
+}
+
+message AssignRoleToUserRequest {
+  int64 user_id = 1;
+  RoleType role=2;
+}
+message AssignRoleToUserResponse {
+  bool success = 1;
+}

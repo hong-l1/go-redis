@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package product;
+
+option go_package = "/product";
+
+service ProductCatalogService {
+  rpc ListProducts(ListProductsReq) returns (ListProductsResp) {}
+  rpc GetProduct(GetProductReq) returns (GetProductResp) {}
+  rpc SearchProducts(SearchProductsReq) returns (SearchProductsResp) {}
+  rpc CreatProduct(CreatProductReq)returns(CreatProductResp){}
+  rpc UpdateProductInfo(UpdateInfoReq)returns(UpdateInfoResp){}
+  rpc DeleteProduct(DeleteProductReq)returns(DeleteProductResp){}
+  rpc DecreaseStock(DecreaseStockReq) returns (DecreaseStockResp);
+  rpc IncreaseStock(IncreaseStockReq) returns (IncreaseStockResp);
+}
+
+message ListProductsReq{
+  int64 page = 1;
+  int64 pageSize = 2;
+  string categoryName = 3;
+}
+
+message Product {
+  int64 id = 1;
+  string name = 2;
+  string description = 3;
+  string picture = 4;
+  int64 price = 5;
+
+  repeated string categories = 6;
+}
+
+message ListProductsResp {
+  repeated Product products = 1;
+}
+
+message GetProductReq {
+  int64 product_id = 1;
+}
+
+message GetProductResp {
+  Product product = 1;
+}
+
+message SearchProductsReq {
+  string query = 1;
+}
+
+message SearchProductsResp {
+  repeated Product results = 1;
+}
+message CreatProductReq{
+  Product product=1;
+}
+message CreatProductResp{
+  bool success=1;
+}
+message UpdateInfoReq{
+  Product product=1;
+}
+message UpdateInfoResp{
+  bool success=1;
+}
+message DeleteProductReq{
+  int64 product_id = 1;          // 商品 ID
+}
+message DeleteProductResp{
+  bool success=1;
+}
+message DecreaseStockReq{
+  int64 product_id = 1;          // 商品 ID
+  int64 quantity = 2;            // 减少的库存数量
+}
+message DecreaseStockResp{
+  bool success = 1;              // 库存减少是否成功
+  int64 remaining_stock = 2;     // 操作后的剩余库存数量
+}
+message IncreaseStockReq{
+  int64 product_id = 1;          // 商品 ID
+  int64 quantity = 2;            // 增加的库存数量
+}
+message IncreaseStockResp{
+  bool success = 1;              // 库存增加是否成功
+  int64 remaining_stock = 2;     // 操作后的剩余库存数量
+}

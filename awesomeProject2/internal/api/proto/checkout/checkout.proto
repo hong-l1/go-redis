@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package  checkout;
+
+import "payment/payment.proto";
+
+option go_package = "/checkout";
+
+service CheckoutService {
+  rpc Checkout(CheckoutReq) returns (CheckoutResp) {}
+}
+
+message CheckoutReq {
+  int32 user_id = 1;
+  payment.CreditCardInfo credit_card = 2;
+}
+
+message CheckoutResp {
+  int32 order_id = 1;
+  string transaction_id = 2;
+}
