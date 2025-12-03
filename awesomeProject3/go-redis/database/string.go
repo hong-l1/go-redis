@@ -3,6 +3,7 @@ package database
 import (
 	"awesomeProject3/go-redis/ineterface/database"
 	"awesomeProject3/go-redis/ineterface/resp"
+	"awesomeProject3/go-redis/pkg/utils"
 	"awesomeProject3/go-redis/resp/reply"
 )
 
@@ -19,12 +20,16 @@ func execSet(db *DB, args [][]byte) resp.Reply {
 	key := string(args[0])
 	entity := &database.DataEntity{Data: args[1]}
 	_ = db.PutEntity(key, entity)
+	db.addAof(utils.ToCmdLine2("set", args...))
 	return reply.NewOkReply()
 }
 func execSetNx(db *DB, args [][]byte) resp.Reply {
 	key := string(args[0])
 	entity := &database.DataEntity{Data: args[1]}
 	result := db.PutIfAbsent(key, entity)
+	if result > 0 {
+		db.addAof(utils.ToCmdLine2("setNx", args...))
+	}
 	return reply.NewIntReply(result)
 }
 func execGetSet(db *DB, args [][]byte) resp.Reply {
@@ -34,6 +39,7 @@ func execGetSet(db *DB, args [][]byte) resp.Reply {
 	if !ok {
 		return reply.NewNilBulkReply()
 	}
+	db.addAof(utils.ToCmdLine2("getSet", args...))
 	db.PutEntity(key, entity)
 	return reply.NewBulkReply(data.Data.([]byte))
 

@@ -5,7 +5,6 @@ import (
 	reply2 "awesomeProject3/go-redis/resp/reply"
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"runtime/debug"
@@ -82,9 +81,13 @@ func parse0(reader io.Reader, ch chan<- *Payload) {
 				err = parseBulkHeader(msg, &state)
 				if err != nil {
 					ch <- &Payload{Err: errors.New("protocol error: " + string(msg))}
+					state = readState{}
+					continue
 				}
 				if state.bulkLen == -1 {
 					ch <- &Payload{Data: &reply2.NilBulkReply{}}
+					state = readState{}
+					continue
 				}
 				state = readState{}
 				continue
@@ -96,14 +99,10 @@ func parse0(reader io.Reader, ch chan<- *Payload) {
 			}
 		} else {
 			err = readBody(msg, &state)
-			for _, arg := range state.args {
-				fmt.Println("state arg:", string(arg))
-			}
 			if err != nil {
 				ch <- &Payload{Err: errors.New("protocol error: " + string(msg))}
 			}
 			if state.IsFinished() {
-				fmt.Println("readstate args", state.args)
 				var result resp.Reply
 				if state.msgType == '*' {
 					result = reply2.NewMultiBulkReply(state.args)
@@ -201,16 +200,15 @@ func readBody(msg []byte, state *readState) error {
 	var err error
 	if line[0] == '$' {
 		state.bulkLen, err = strconv.Atoi(string(line[1:]))
-		log.Println("bulkLen:", state)
 		if err != nil {
 			return errors.New("protocol err" + string(line))
 		}
 		if state.bulkLen <= 0 {
 			state.args = append(state.args, []byte{})
 			state.bulkLen = 0
-		} else {
-			state.args = append(state.args, line)
 		}
+	} else {
+		state.args = append(state.args, line)
 	}
 	return nil
 }

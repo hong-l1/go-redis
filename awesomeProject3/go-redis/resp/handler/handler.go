@@ -64,7 +64,6 @@ func (r *RespHandler) Handle(ctx context.Context, conn net.Conn) {
 		if !ok {
 			continue
 		}
-		fmt.Println("val :", val.ToBytes())
 		result := r.db.Exec(client, val.Content)
 		if result != nil {
 			client.Write(result.ToBytes())

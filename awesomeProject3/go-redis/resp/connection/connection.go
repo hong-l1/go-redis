@@ -11,7 +11,7 @@ type Connect struct {
 	conn         net.Conn
 	waitingReply wait.Wait
 	mu           sync.Mutex
-	redisDB      int
+	RedisDB      int
 }
 
 func NewConnect(conn net.Conn) *Connect {
@@ -23,11 +23,11 @@ func (c *Connect) RemoteAddr() string {
 	return c.conn.RemoteAddr().String()
 }
 func (c *Connect) GetDBIndex() int {
-	return c.redisDB
+	return c.RedisDB
 }
 
 func (c *Connect) SelectDB(i int) {
-	c.redisDB = i
+	c.RedisDB = i
 }
 
 func (c *Connect) Write(bytes []byte) error {

@@ -9,14 +9,18 @@ import (
 )
 
 type DB struct {
-	Index int
-	dict  dict.Dict
+	Index  int
+	dict   dict.Dict
+	addAof func(cmd [][]byte)
 }
+
 type ExecFunc func(db *DB, args [][]byte) resp.Reply
 
 func NewDB() *DB {
 	return &DB{
 		dict: dict.NewDict(),
+		addAof: func(cmd [][]byte) {
+		},
 	}
 }
 func (d *DB) Exec(conn resp.Connection, args [][]byte) resp.Reply {

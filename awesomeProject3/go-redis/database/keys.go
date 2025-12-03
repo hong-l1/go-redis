@@ -2,6 +2,7 @@ package database
 
 import (
 	"awesomeProject3/go-redis/ineterface/resp"
+	"awesomeProject3/go-redis/pkg/utils"
 	"awesomeProject3/go-redis/pkg/wildcard"
 	"awesomeProject3/go-redis/resp/reply"
 )
@@ -12,6 +13,10 @@ func execDel(db *DB, args [][]byte) resp.Reply {
 		keys[i] = string(key)
 	}
 	deleted := db.Removes(keys...)
+	if deleted > 0 {
+		cmd := utils.ToCmdLine2("del", args...)
+		db.addAof(cmd)
+	}
 	return reply.NewIntReply(deleted)
 }
 func execExists(db *DB, args [][]byte) resp.Reply {
@@ -26,6 +31,7 @@ func execExists(db *DB, args [][]byte) resp.Reply {
 }
 func execFlushDB(db *DB, args [][]byte) resp.Reply {
 	db.Flush()
+	db.addAof(utils.ToCmdLine2("flush", args...))
 	return reply.NewOkReply()
 }
 func execType(db *DB, args [][]byte) resp.Reply {
@@ -47,6 +53,7 @@ func execRename(db *DB, args [][]byte) resp.Reply {
 	if !ok {
 		return reply.NewErrReply("no such key")
 	}
+	db.addAof(utils.ToCmdLine2("rename", args...))
 	db.PutEntity(string(dst), data)
 	db.Remove(string(src))
 	return reply.NewOkReply()
@@ -62,6 +69,7 @@ func execRenameNx(db *DB, args [][]byte) resp.Reply {
 	if !ok {
 		return reply.NewErrReply("no such key")
 	}
+	db.addAof(utils.ToCmdLine2("renameNx", args...))
 	db.PutEntity(string(dst), data)
 	db.Remove(string(src))
 	return reply.NewIntReply(1)
