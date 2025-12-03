@@ -84,14 +84,13 @@ func (d *MyDict) PutIfExists(key string, val interface{}) (result int) {
 
 func (d *MyDict) Remove(key string) (interface{}, int) {
 	shard := d.getShard(key)
-	shard.RUnlock()
+	shard.RLock()
 	defer shard.RUnlock()
 	if shard.rehashIdx != -1 {
 		shard.rehashStep()
 	}
 	hash := getHash(key)
 	if val, ok := shard.ht[0].del(key, hash); ok {
-		// 即使在 ht[0] 删除了，也要注意负载检查，Redis 有缩容逻辑，这里暂略
 		return val, 1
 	}
 	if shard.rehashIdx != -1 {

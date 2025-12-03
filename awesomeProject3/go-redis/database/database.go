@@ -12,22 +12,27 @@ var DefaultDBSize = 16
 
 type Database struct {
 	dbSet      []*DB
-	aofHandler aof.AofHandler
+	aofHandler *aof.AofHandler
 }
 
 func NewDatabase() *Database {
-	database := new(Database)
-	aofHandler, _ := aof.NewAofHandler(database)
+	database := &Database{}
 	dbset := make([]*DB, DefaultDBSize)
-	for k := range dbset {
+	for i := range dbset {
 		db := NewDB()
-		db.addAof = func(cmd [][]byte) {
-			aofHandler.AddAof(k, cmd)
-		}
-		db.Index = k
-		dbset[k] = db
+		db.Index = i
+		dbset[i] = db
 	}
-	return &Database{dbSet: dbset}
+	database.dbSet = dbset
+	aofHandler, _ := aof.NewAofHandler(database)
+	database.aofHandler = aofHandler
+	for _, db := range database.dbSet {
+		localIndex := db.Index
+		db.addAof = func(cmd [][]byte) {
+			database.aofHandler.AddAof(localIndex, cmd)
+		}
+	}
+	return database
 }
 func execSelect(conn resp.Connection, database *Database, args [][]byte, ) resp.Reply {
 	num, err := strconv.Atoi(string(args[0]))
@@ -41,7 +46,7 @@ func execSelect(conn resp.Connection, database *Database, args [][]byte, ) resp.
 	return reply.NewOkReply()
 }
 func (d *Database) Exec(client resp.Connection, args [][]byte) resp.Reply {
-	if args == nil {
+	if len(args) == 0 {
 		return reply.NewErrReply("empty command")
 	}
 	cmd := strings.ToLower(string(args[0]))

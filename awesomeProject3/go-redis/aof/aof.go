@@ -6,10 +6,12 @@ import (
 	"awesomeProject3/go-redis/resp/connection"
 	"awesomeProject3/go-redis/resp/parser"
 	"awesomeProject3/go-redis/resp/reply"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"strconv"
+	"sync"
 )
 
 var DefaultPath = "go-redis/aof.txt"
@@ -21,11 +23,13 @@ type payload struct {
 	dbIndex int
 }
 type AofHandler struct {
-	db          database.Database
-	aofChan     chan *payload
-	aofFile     *os.File
-	aofFilename string
-	currentDB   int
+	db             database.Database
+	aofChan        chan *payload
+	aofFile        *os.File
+	aofFilename    string
+	currentDB      int
+	aofRewriteChan chan *payload
+	mu             sync.Mutex
 }
 
 func NewAofHandler(database database.Database) (*AofHandler, error) {
@@ -52,7 +56,9 @@ func (h *AofHandler) AddAof(dbIndex int, cmdLine CmdLine) {
 	}
 }
 func (h *AofHandler) HandlerAof() {
+	h.currentDB = 0
 	for data := range h.aofChan {
+		fmt.Println("payload cmdline", data.cmdLine)
 		if data.dbIndex != h.currentDB {
 			cmd := utils.ToCmdLine("select", strconv.Itoa(data.dbIndex))
 			bytes := reply.NewMultiBulkReply(cmd).ToBytes()
