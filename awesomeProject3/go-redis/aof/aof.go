@@ -6,15 +6,14 @@ import (
 	"awesomeProject3/go-redis/resp/connection"
 	"awesomeProject3/go-redis/resp/parser"
 	"awesomeProject3/go-redis/resp/reply"
-	"fmt"
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
-	"sync"
 )
 
-var DefaultPath = "go-redis/aof.txt"
+var DefaultName = "aof.txt"
 
 type CmdLine [][]byte
 
@@ -23,20 +22,19 @@ type payload struct {
 	dbIndex int
 }
 type AofHandler struct {
-	db             database.Database
-	aofChan        chan *payload
-	aofFile        *os.File
-	aofFilename    string
-	currentDB      int
-	aofRewriteChan chan *payload
-	mu             sync.Mutex
+	db          database.Database
+	aofChan     chan *payload
+	aofFile     *os.File
+	aofFilename string
+	currentDB   int
 }
 
 func NewAofHandler(database database.Database) (*AofHandler, error) {
 	var handlerAof = new(AofHandler)
 	handlerAof.db = database
-	handlerAof.aofFilename = DefaultPath
-	file, err := os.OpenFile(handlerAof.aofFilename, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+	handlerAof.aofFilename = DefaultName
+	path := filepath.Join("./", handlerAof.aofFilename)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
 	if err != nil {
 		log.Fatal(err)
 		return nil, err
@@ -56,18 +54,17 @@ func (h *AofHandler) AddAof(dbIndex int, cmdLine CmdLine) {
 	}
 }
 func (h *AofHandler) HandlerAof() {
-	h.currentDB = 0
 	for data := range h.aofChan {
-		fmt.Println("payload cmdline", data.cmdLine)
 		if data.dbIndex != h.currentDB {
 			cmd := utils.ToCmdLine("select", strconv.Itoa(data.dbIndex))
 			bytes := reply.NewMultiBulkReply(cmd).ToBytes()
 			_, err := h.aofFile.Write(bytes)
 			if err != nil {
-				log.Println("Error writing to aof file:", err)
+				log.Println("Error writing select to aof file:", err)
 				continue
 			}
 			h.currentDB = data.dbIndex
+			log.Printf("Switched AOF DB to %d", h.currentDB)
 		}
 		bytes := reply.NewMultiBulkReply(data.cmdLine).ToBytes()
 		_, err := h.aofFile.Write(bytes)
@@ -105,4 +102,5 @@ func (h *AofHandler) LoadAof() {
 			continue
 		}
 	}
+	h.currentDB = fakeConn.GetDBIndex()
 }

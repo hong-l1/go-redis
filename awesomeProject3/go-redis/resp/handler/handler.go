@@ -7,7 +7,6 @@ import (
 	"awesomeProject3/go-redis/resp/reply"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -42,7 +41,6 @@ func (r *RespHandler) Handle(ctx context.Context, conn net.Conn) {
 	r.activeConn.Store(client, struct{}{})
 	ch := parser.ParseStream(conn)
 	for payload := range ch {
-		fmt.Println(payload)
 		if payload.Err != nil {
 			if errors.Is(payload.Err, io.EOF) || errors.Is(payload.Err, io.ErrUnexpectedEOF) ||
 				strings.Contains(payload.Err.Error(), "usr of closed network connection") {

@@ -12,7 +12,7 @@ func NewMySet() *MySet {
 	}
 }
 func (m *MySet) Add(val string) int {
-	return m.dict.Put(val, struct{}{})
+	return m.dict.PutIfAbsent(val, struct{}{})
 }
 
 func (m *MySet) Remove(val string) int {

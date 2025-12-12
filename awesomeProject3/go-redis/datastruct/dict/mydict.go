@@ -67,25 +67,65 @@ func (d *MyDict) Put(key string, val interface{}) (result int) {
 }
 
 func (d *MyDict) PutIfAbsent(key string, val interface{}) (result int) {
-	_, exist := d.Get(key)
-	if !exist {
-		return d.Put(key, val)
+	shard := d.getShard(key)
+	shard.Lock()
+	defer shard.Unlock()
+
+	if shard.rehashIdx != -1 {
+		shard.rehashStep()
 	}
-	return 0
+	hash := getHash(key)
+	if _, ok := shard.ht[0].lookup(key, hash); ok {
+		return 0
+	}
+	if shard.rehashIdx != -1 {
+		if _, ok := shard.ht[1].lookup(key, hash); ok {
+			return 0
+		}
+	}
+
+	targetHt := shard.ht[0]
+	if shard.rehashIdx != -1 {
+		targetHt = shard.ht[1]
+	}
+	idx := hash & targetHt.mask
+	newEntry := &Entry{
+		Key:  key,
+		Val:  val,
+		Next: targetHt.buckets[idx],
+	}
+	targetHt.buckets[idx] = newEntry
+	targetHt.used++
+	if shard.rehashIdx == -1 {
+		shard.expand()
+	}
+	return 1
 }
 
 func (d *MyDict) PutIfExists(key string, val interface{}) (result int) {
-	_, exist := d.Get(key)
-	if exist {
-		return d.Put(key, val)
+	shard := d.getShard(key)
+	shard.Lock()
+	defer shard.Unlock()
+
+	if shard.rehashIdx != -1 {
+		shard.rehashStep()
+	}
+	hash := getHash(key)
+	if shard.ht[0].update(key, val, hash) {
+		return 1
+	}
+	if shard.rehashIdx != -1 {
+		if shard.ht[1].update(key, val, hash) {
+			return 1
+		}
 	}
 	return 0
 }
 
 func (d *MyDict) Remove(key string) (interface{}, int) {
 	shard := d.getShard(key)
-	shard.RLock()
-	defer shard.RUnlock()
+	shard.Lock()
+	defer shard.Unlock()
 	if shard.rehashIdx != -1 {
 		shard.rehashStep()
 	}

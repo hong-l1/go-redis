@@ -12,11 +12,7 @@ import (
 	"syscall"
 )
 
-type Config struct {
-	Addr string
-}
-
-func ListenAndServerWithSignal(config2 Config, handler tcp.Handler) error {
+func ListenAndServerWithSignal(addr string, handler tcp.Handler) error {
 	closeCh := make(chan struct{})
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT)
@@ -27,7 +23,7 @@ func ListenAndServerWithSignal(config2 Config, handler tcp.Handler) error {
 			closeCh <- struct{}{}
 		}
 	}()
-	listen, err := net.Listen("tcp", config2.Addr)
+	listen, err := net.Listen("tcp", addr)
 	log.Println("listen:", listen.Addr())
 	if err != nil {
 		log.Fatal(err)

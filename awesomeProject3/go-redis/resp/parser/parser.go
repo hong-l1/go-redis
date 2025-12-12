@@ -28,17 +28,17 @@ func (r *readState) IsFinished() bool {
 	return r.expectedArgsCnt > 0 && r.expectedArgsCnt == len(r.args)
 }
 
-//ParseStream 给redis内核返回一个channel,内核可以不断从channel中拿到解析器解析到的数据
+// ParseStream 给redis内核返回一个channel,内核可以不断从channel中拿到解析器解析到的数据
 func ParseStream(reader io.Reader) <-chan *Payload {
 	ch := make(chan *Payload)
 	go parse0(reader, ch)
 	return ch
 }
 
-//for 循环一直执行,不断使用readline来读取客户端发来的指令
-//readline每次读取一行；buldlen=0就是初始化的；buildlen就是需要读取多次。
-//pase...和readBody都是通过修改readState的参数来控制readline读取的方式
-//parseSingleLineReply 简单命令可以直接返回解析后的语句给redis内核
+// for 循环一直执行,不断使用readline来读取客户端发来的指令
+// readline每次读取一行；buldlen=0就是初始化的；buildlen就是需要读取多次。
+// pase...和readBody都是通过修改readState的参数来控制readline读取的方式
+// parseSingleLineReply 简单命令可以直接返回解析后的语句给redis内核
 func parse0(reader io.Reader, ch chan<- *Payload) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -52,7 +52,6 @@ func parse0(reader io.Reader, ch chan<- *Payload) {
 	for {
 		var ioErr bool
 		msg, ioErr, err = readLine(bufReader, &state)
-		log.Println(string(msg))
 		if err != nil {
 			if ioErr {
 				ch <- &Payload{Err: err}
@@ -89,7 +88,6 @@ func parse0(reader io.Reader, ch chan<- *Payload) {
 					state = readState{}
 					continue
 				}
-				state = readState{}
 				continue
 			} else {
 				result, err := parseSingleLineReply(msg)
@@ -140,7 +138,7 @@ func readLine(bufReader *bufio.Reader, state *readState) ([]byte, bool, error) {
 	return msg, false, nil
 }
 
-//解析数组，设置state通过state来
+// 解析数组，设置state通过state来
 func parseMultiBulkHeader(msg []byte, state *readState) error {
 	var err error
 	state.expectedArgsCnt, err = strconv.Atoi(string(msg[1 : len(msg)-2]))
@@ -160,23 +158,23 @@ func parseMultiBulkHeader(msg []byte, state *readState) error {
 	}
 }
 
-//解析字符串
+// 解析字符串
 func parseBulkHeader(msg []byte, state *readState) error {
 	bulkLen, err := strconv.Atoi(string(msg[1 : len(msg)-2]))
 	if err != nil {
 		return errors.New("protocol err" + string(msg))
 	}
 	if bulkLen == -1 {
+		state.bulkLen = -1
 		return nil
-	} else if bulkLen > 0 {
-		state.bulkLen = bulkLen
-		state.readingMultiLine = false
-		state.msgType = msg[0]
-		state.args = make([][]byte, 0, 1)
-		return nil
-	} else {
-		return errors.New("protocol err" + string(msg))
 	}
+	// bulkLen >= 0: prepare to read body as a single bulk string
+	state.bulkLen = bulkLen
+	state.readingMultiLine = true
+	state.msgType = msg[0]
+	state.expectedArgsCnt = 1
+	state.args = make([][]byte, 0, 1)
+	return nil
 }
 func parseSingleLineReply(msg []byte) (resp.Reply, error) {
 	str := strings.TrimSuffix(string(msg), "\r\n")

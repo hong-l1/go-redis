@@ -15,7 +15,7 @@ func NewPongReply() *PongReply {
 type OkReply struct {
 }
 
-var okReply = []byte("+Ok\r\n")
+var okReply = []byte("+OK\r\n")
 
 func (p *OkReply) ToBytes() []byte {
 	return okReply
@@ -38,6 +38,10 @@ func (p *NilBulkReply) ToBytes() []byte {
 }
 
 type EmptyMultiBulkReply struct {
+}
+
+func NewEmptyMultiBulkReply() *EmptyMultiBulkReply {
+	return &EmptyMultiBulkReply{}
 }
 
 var emptyMultiBulkReply = []byte("*0\r\n")

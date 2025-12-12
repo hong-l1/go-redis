@@ -64,17 +64,16 @@ func (r *StatusReply) ToBytes() []byte {
 }
 
 type IntReply struct {
-	num int
+	Num int
 }
 
 func (p *IntReply) ToBytes() []byte {
-	return []byte(":" + strconv.Itoa(p.num) + CRLF)
+	return []byte(":" + strconv.Itoa(p.Num) + CRLF)
 }
 func NewIntReply(num int) *IntReply {
-	return &IntReply{num: num}
+	return &IntReply{Num: num}
 }
 
-//StandardErrReply自定义错误
 type StandardErrReply struct {
 	status string
 }

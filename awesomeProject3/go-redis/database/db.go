@@ -17,16 +17,16 @@ type DB struct {
 	ttl    dict.Dict
 	addAof func(cmd [][]byte)
 }
-
 type ExecFunc func(db *DB, args [][]byte) resp.Reply
 
 func NewDB() *DB {
-	return &DB{
+	db := &DB{
 		dict: dict.NewDict(),
 		ttl:  dict.NewDict(),
 		addAof: func(cmd [][]byte) {
 		},
 	}
+	return db
 }
 func (d *DB) Exec(conn resp.Connection, args [][]byte) resp.Reply {
 	name := strings.ToLower(string(args[0]))
@@ -47,6 +47,9 @@ func validateArity(arity int, args [][]byte) bool {
 	return argNum >= -arity
 }
 func (d *DB) GetEntity(key string) (*database.DataEntity, bool) {
+	if d.IsExpired(key) {
+		return nil, false
+	}
 	val, exists := d.dict.Get(key)
 	if !exists {
 		return nil, exists
@@ -54,22 +57,27 @@ func (d *DB) GetEntity(key string) (*database.DataEntity, bool) {
 	return val.(*database.DataEntity), exists
 }
 func (d *DB) PutEntity(key string, val *database.DataEntity) int {
+	d.IsExpired(key)
 	return d.dict.Put(key, val)
 }
 func (d *DB) PutIfExists(key string, val *database.DataEntity) int {
+	d.IsExpired(key)
 	return d.dict.PutIfExists(key, val)
 }
 func (d *DB) PutIfAbsent(key string, val *database.DataEntity) int {
+	d.IsExpired(key)
 	return d.dict.PutIfAbsent(key, val)
 }
 func (d *DB) Remove(key string) {
 	d.dict.Remove(key)
+	d.ttl.Remove(key)
+	timewheel.Cancel(genExpireTask(key))
 }
 func (d *DB) Removes(keys ...string) int {
 	deleted := 0
 	for _, key := range keys {
 		if _, ok := d.dict.Get(key); ok {
-			d.dict.Remove(key)
+			d.Remove(key)
 			deleted++
 		}
 	}
